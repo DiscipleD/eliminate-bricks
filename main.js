@@ -15,53 +15,93 @@
 		this.canvas = canvas;
 		this.ct = this.canvas.getContext('2d');
 		this.game = game;
+		this.ball = new Ball(this.ct);
+		this.board = new ControlBoard(this.ct);
+		this.ref;
 	};
-	GameFrame.prototype.getBoardX = function(x, board) {
-		return x < board.width / 2 ? 0 : x > this.canvas.width - board.width / 2 ? this.canvas.width - board.width : x - board.width / 2;
+	GameFrame.prototype.getBoardX = function(x) {
+		return x < this.board.width / 2 ? 0 : x > this.canvas.width - this.board.width / 2 ? this.canvas.width - this.board.width : x - this.board.width / 2;
 	};
 	GameFrame.prototype.clear = function() {
 		// this.ct.fillStyle = 'rgba(255,255,255,0.3)';
-		this.ct.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		this.ct.clearRect(0, 0, this.canvas.width, this.canvas.height - this.board.height);
 	};
 	GameFrame.prototype.init = function() {
 		var $this = this;
-		var ref;
-		var ball = new Ball($this.ct);
-		var board = new ControlBoard($this.ct);
 
-		board.x = ($this.canvas.width - board.width) / 2;
-		board.y = $this.canvas.height - board.height;
-		ball.x = $this.canvas.width / 2;
-		ball.y = board.y - ball.radius;
+		$this.board.x = ($this.canvas.width - $this.board.width) / 2;
+		$this.board.y = $this.canvas.height - $this.board.height;
+		$this.ball.x = $this.canvas.width / 2;
+		$this.ball.y = $this.board.y - $this.ball.radius;
 
-		ball.draw();
-		board.draw();
+		$this.ball.draw();
+		$this.board.draw();
 
 		$this.canvas.addEventListener('mousemove', function (e) {
 			if ($this.game.run) {
-
+				$this.ct.clearRect(0, $this.canvas.height - $this.board.height, $this.canvas.width, $this.canvas.height);
+				$this.board.x = $this.getBoardX(e.clientX, $this.board);
+				$this.board.draw();
 			} else {
-				$this.clear();
-				board.x = $this.getBoardX(e.clientX, board);
-				ball.x = e.clientX < ball.radius ? ball.radius : e.clientX > $this.canvas.width - ball.radius ? $this.canvas.width - ball.radius : e.clientX;
+				$this.ct.clearRect(0, 0, $this.canvas.width, $this.canvas.height);
+				$this.board.x = $this.getBoardX(e.clientX, $this.board);
+				$this.ball.x = e.clientX < $this.ball.radius ? $this.ball.radius : e.clientX > $this.canvas.width - $this.ball.radius ? $this.canvas.width - $this.ball.radius : e.clientX;
 
-				ball.draw();
-				board.draw();
+				$this.ball.draw();
+				$this.board.draw();
 			}
 		});
 
-		this.canvas.addEventListener();
+		this.canvas.addEventListener('click', function() {
+			if (!$this.game.run) {
+				$this.game.run = true;
+				$this.ref = window.requestAnimationFrame(function(){$this.draw($this);});
+			}
+		});
+
+		this.canvas.addEventListener('mouseenter', function() {
+			if ($this.game.run) {
+				$this.ref = window.requestAnimationFrame(function(){$this.draw($this);});
+			}
+		});
 
 		$this.canvas.addEventListener('mouseout', function() {
-			window.cancelAnimationFrame(ref);
-			$this.game.run = false;
+			window.cancelAnimationFrame($this.ref);
 		});
+	};
+	GameFrame.prototype.draw = function(frame) {
+		frame.clear();
+
+		frame.ball.x += frame.ball.vx;
+		frame.ball.y += frame.ball.vy;
+
+		frame.ball.draw();
+
+		frame.judgeOver() && frame.gameOver();
+
+		if (frame.ball.y + frame.ball.vy > frame.canvas.height - frame.board.height - frame.ball.radius || frame.ball.y + frame.ball.vy < frame.ball.radius) {
+			frame.ball.vy = -frame.ball.vy;
+		}
+		if (frame.ball.x + frame.ball.vx > frame.canvas.width - frame.ball.radius || frame.ball.x + frame.ball.vx < frame.ball.radius) {
+			frame.ball.vx = -frame.ball.vx;
+		}
+
+		!frame.judgeOver() && (frame.ref = window.requestAnimationFrame(function(){frame.draw(frame);}));
+	};
+	GameFrame.prototype.judgeOver = function() {
+		return this.ball.y + this.ball.vy > this.canvas.height - this.board.height - this.ball.radius && (this.ball.x < this.board.x || this.ball.x > this.board.x + this.board.width);
+	};
+	GameFrame.prototype.gameOver = function() {
+		window.cancelAnimationFrame(this.ref);
+		this.game.run = false;
 	};
 
 	var Ball = function (ct) {
 		this.ct = ct;
 		this.x = 0;
+		this.vx = 4;
 		this.y = 0;
+		this.vy = 1;
 		this.radius = 15;
 		this.color = 'blue';
 	};
