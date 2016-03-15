@@ -24,8 +24,8 @@
 		return x < this.board.width / 2 ? 0 : x > this.canvas.width - this.board.width / 2 ? this.canvas.width - this.board.width : x - this.board.width / 2;
 	};
 	GameFrame.prototype.clear = function() {
-		// this.ct.fillStyle = 'rgba(255,255,255,0.3)';
-		this.ct.clearRect(0, 0, this.canvas.width, this.canvas.height - this.board.height);
+		this.ct.fillStyle = 'rgba(255,255,255,0.3)';
+		this.ct.fillRect(0, 0, this.canvas.width, this.canvas.height - this.board.height);
 	};
 	GameFrame.prototype.init = function() {
 		var $this = this;
