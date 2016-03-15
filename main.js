@@ -8,7 +8,8 @@
 	var canvas = document.getElementById('main-screen');
 
 	var Game = function() {
-		this.run = false;
+		this.start = false;
+		this.over = false;
 	};
 
 	var GameFrame = function(canvas, game) {
@@ -38,11 +39,11 @@
 		$this.board.draw();
 
 		$this.canvas.addEventListener('mousemove', function (e) {
-			if ($this.game.run) {
+			if ($this.game.start && !$this.game.over) {
 				$this.ct.clearRect(0, $this.canvas.height - $this.board.height, $this.canvas.width, $this.canvas.height);
 				$this.board.x = $this.getBoardX(e.clientX, $this.board);
 				$this.board.draw();
-			} else {
+			} else if (!$this.game.start){
 				$this.ct.clearRect(0, 0, $this.canvas.width, $this.canvas.height);
 				$this.board.x = $this.getBoardX(e.clientX, $this.board);
 				$this.ball.x = e.clientX < $this.ball.radius ? $this.ball.radius : e.clientX > $this.canvas.width - $this.ball.radius ? $this.canvas.width - $this.ball.radius : e.clientX;
@@ -53,14 +54,14 @@
 		});
 
 		this.canvas.addEventListener('click', function() {
-			if (!$this.game.run) {
-				$this.game.run = true;
+			if (!$this.game.start) {
+				$this.game.start = true;
 				$this.ref = window.requestAnimationFrame(function(){$this.draw($this);});
 			}
 		});
 
 		this.canvas.addEventListener('mouseenter', function() {
-			if ($this.game.run) {
+			if ($this.game.start && !$this.game.over) {
 				$this.ref = window.requestAnimationFrame(function(){$this.draw($this);});
 			}
 		});
@@ -77,7 +78,11 @@
 
 		frame.ball.draw();
 
-		frame.judgeOver() && frame.gameOver();
+		if (frame.judgeOver()) {
+			frame.gameOver();
+		} else {
+			frame.ref = window.requestAnimationFrame(function(){frame.draw(frame);});
+		}
 
 		if (frame.ball.y + frame.ball.vy > frame.canvas.height - frame.board.height - frame.ball.radius || frame.ball.y + frame.ball.vy < frame.ball.radius) {
 			frame.ball.vy = -frame.ball.vy;
@@ -85,15 +90,16 @@
 		if (frame.ball.x + frame.ball.vx > frame.canvas.width - frame.ball.radius || frame.ball.x + frame.ball.vx < frame.ball.radius) {
 			frame.ball.vx = -frame.ball.vx;
 		}
-
-		!frame.judgeOver() && (frame.ref = window.requestAnimationFrame(function(){frame.draw(frame);}));
 	};
 	GameFrame.prototype.judgeOver = function() {
 		return this.ball.y + this.ball.vy > this.canvas.height - this.board.height - this.ball.radius && (this.ball.x < this.board.x || this.ball.x > this.board.x + this.board.width);
 	};
 	GameFrame.prototype.gameOver = function() {
+		this.ct.font = '68px bold serif';
+		this.ct.fillStyle = 'red';
+		this.ct.fillText('Game Over!', 100, 200);
 		window.cancelAnimationFrame(this.ref);
-		this.game.run = false;
+		this.game.over = true;
 	};
 
 	var Ball = function (ct) {
@@ -119,7 +125,7 @@
 		this.x = 0;
 		this.y = 0;
 		this.width = 150;
-		this.height = 20;
+		this.height = 10;
 		this.color = 'brown';
 	};
 	ControlBoard.prototype.draw = function() {
